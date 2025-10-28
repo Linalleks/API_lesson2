@@ -1,0 +1,70 @@
+import requests
+from decouple import config
+from urllib.parse import urlparse
+
+
+def shorten_link(token, url):
+    base_url = 'https://api.vk.ru/method/utils.getShortLink'
+    response = requests.get(base_url, params={
+        'v': '5.199',
+        'access_token': token,
+        'url': url
+    })
+    response.raise_for_status()
+
+    if 'error' in response.json():
+        raise requests.exceptions.HTTPError('Указана некорректная ссылка. '
+                                            + 'Невозможно её сократить.')
+
+    short_url = response.json()['response']['short_url']
+    return short_url
+
+
+def count_clicks(token, link):
+    base_url = 'https://api.vk.ru/method/utils.getLinkStats'
+    response = requests.get(base_url, params={
+        'v': '5.199',
+        'access_token': token,
+        'key': link,
+        'interval': 'forever'
+    })
+    response.raise_for_status()
+
+    if 'error' in response.json():
+        raise requests.exceptions.HTTPError('Указана некорректная ссылка.')
+
+    if response.json()['response']['stats'] == []:
+        clicks_count = 0
+    else:
+        clicks_count = response.json()['response']['stats'][0]['views']
+
+    return clicks_count
+
+
+def is_shorten_link(url):
+    return urlparse(url).netloc == 'vk.cc'
+
+
+def main():
+    token = config('TOKEN_API_VK')
+    print('Приложение сократит длинную ссылку',
+          'или предоставит статистику кликов по короткой ссылке.')
+    user_url = input('Введите ссылку: ')
+
+    if is_shorten_link(user_url):
+        path_link = urlparse(user_url).path[1:]
+        try:
+            number_clicks = count_clicks(token, path_link)
+        except requests.exceptions.HTTPError as error:
+            exit(f'Произошла ошибка:\n{error}')
+        print('Количество кликов по ссылке: ', number_clicks)
+    else:
+        try:
+            short_link = shorten_link(token, user_url)
+        except requests.exceptions.HTTPError as error:
+            exit(f'Произошла ошибка:\n{error}')
+        print('Сокращенная ссылка: ', short_link)
+
+
+if __name__ == '__main__':
+    main()
