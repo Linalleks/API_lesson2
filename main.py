@@ -11,13 +11,13 @@ def shorten_link(token, url):
         'url': url
     })
     response.raise_for_status()
-    response_dict = response.json()
+    response = response.json()
 
-    if 'error' in response_dict:
+    if 'error' in response:
         raise requests.exceptions.HTTPError('Указана некорректная ссылка. '
                                             + 'Невозможно её сократить.')
 
-    short_url = response_dict['response']['short_url']
+    short_url = response['response']['short_url']
     return short_url
 
 
@@ -30,15 +30,15 @@ def count_clicks(token, link):
         'interval': 'forever'
     })
     response.raise_for_status()
-    response_dict = response.json()
+    response = response.json()
 
-    if 'error' in response_dict:
+    if 'error' in response:
         raise requests.exceptions.HTTPError('Указана некорректная ссылка.')
 
-    if response_dict['response']['stats'] == []:
+    if response['response']['stats'] == []:
         clicks_count = 0
     else:
-        clicks_count = response_dict['response']['stats'][0]['views']
+        clicks_count = response['response']['stats'][0]['views']
 
     return clicks_count
 
@@ -51,12 +51,12 @@ def is_short_link_vk(token, url):
         'url': url
     })
     response.raise_for_status()
-    response_dict = response.json()
+    response = response.json()
 
-    if 'error' in response_dict:
+    if 'error' in response:
         raise requests.exceptions.HTTPError('Указана некорректная ссылка.')
 
-    return (response_dict['response']['link'] != url) \
+    return (response['response']['link'] != url) \
         & (urlparse(url).netloc == 'vk.cc')
 
 
